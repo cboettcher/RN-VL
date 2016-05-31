@@ -1,11 +1,11 @@
 package de.teamkaesekaestchen.rnvl.net;
 
-import java.awt.TrayIcon.MessageType;
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.IOException;
 import java.net.Socket;
 import java.net.UnknownHostException;
+import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -14,33 +14,41 @@ import javax.xml.bind.UnmarshalException;
 import de.teamkaesekaestchen.rnvl.ai.Player;
 import de.teamkaesekaestchen.rnvl.io.XmlInStream;
 import de.teamkaesekaestchen.rnvl.io.XmlOutStream;
-import de.teamkaesekaestchen.rnvl.prot.ErrorType;
+import de.teamkaesekaestchen.rnvl.prot.AcceptMessageType;
+import de.teamkaesekaestchen.rnvl.prot.AwaitMoveMessageType;
+import de.teamkaesekaestchen.rnvl.prot.BoardType;
+import de.teamkaesekaestchen.rnvl.prot.DisconnectMessageType;
 import de.teamkaesekaestchen.rnvl.prot.LoginMessageType;
 import de.teamkaesekaestchen.rnvl.prot.LoginReplyMessageType;
 import de.teamkaesekaestchen.rnvl.prot.MazeCom;
 import de.teamkaesekaestchen.rnvl.prot.MazeComType;
+import de.teamkaesekaestchen.rnvl.prot.MoveMessageType;
+import de.teamkaesekaestchen.rnvl.prot.TreasureType;
+import de.teamkaesekaestchen.rnvl.prot.TreasuresToGoType;
 
 public class Main {
-	
+
 	private static String host = "localhost";
 	private static int port = 8080;
 	
-	//static communication variables
+	private static volatile int countFailedMoves = 0;
+	private static volatile int countTotalFailedMoves = 0;
+	
+
+	// static communication variables
 	private static Player player;
 	private static Socket socket;
 	private static XmlInStream instream;
 	private static XmlOutStream outstream;
 	private static int id = -1;
-	
-	
+
 	public static final int MAX_LOGIN_TRIES = 5;
 	public static final String TEAM = "team kaesekaestchen";
 	private static final Logger logger = Logger.getLogger("Main");
 	public static final int UNKNOWN_HOST_CODE = 1000;
 	public static final int CONNECTION_FAILED_CODE = 1001;
 	public static final int LOGIN_FAILED_CODE = 1002;
-	
-	
+
 	public static void main(String[] args) {
 		if (args.length >= 1) {
 			host = args[0];
@@ -49,9 +57,9 @@ public class Main {
 			port = Integer.parseInt(args[1]);
 		}
 		logger.setLevel(Level.INFO);
-		
-		//TODO setPlayer
-		
+
+		// TODO setPlayer
+
 		try {
 			socket = new Socket(host, port);
 		} catch (UnknownHostException e) {
@@ -64,9 +72,9 @@ public class Main {
 			logger.warning("Shutting down Program.");
 			System.exit(CONNECTION_FAILED_CODE);
 		}
-		
-		logger.info("Successfully connected to server at " + host + ":"  +port);
-		
+
+		logger.info("Successfully connected to server at " + host + ":" + port);
+
 		try {
 			instream = new XmlInStream(new BufferedInputStream(socket.getInputStream()));
 		} catch (IOException e) {
@@ -83,16 +91,16 @@ public class Main {
 			logger.warning("Shutting down Program.");
 			System.exit(CONNECTION_FAILED_CODE);
 		}
-		
+
 		logger.info("Successfully attached to the network streams.");
-		
+
 		MazeCom mc = null;
-		
+
 		boolean loginSuccess = false;
 		LoginMessageType lmt;
 		LoginReplyMessageType lrmt;
 		int c = 0;
-		
+
 		while (!loginSuccess && c < MAX_LOGIN_TRIES) {
 			lmt = new LoginMessageType();
 			lmt.setName(TEAM);
@@ -111,7 +119,7 @@ public class Main {
 				lrmt = mc.getLoginReplyMessage();
 				id = lrmt.getNewID();
 				loginSuccess = true;
-			} else if (mc.getMcType().equals(MazeComType.ACCEPT)){
+			} else if (mc.getMcType().equals(MazeComType.ACCEPT)) {
 				logger.info("Login failed, trying again.");
 				logger.info("ErrorType is " + mc.getAcceptMessage().getErrorCode().value());
 			} else {
@@ -119,18 +127,88 @@ public class Main {
 			}
 			c++;
 		}
-		
+
 		if (!loginSuccess) {
 			logger.warning("Login failed!");
 			logger.warning("Shutting down program.");
 			System.exit(LOGIN_FAILED_CODE);
 		}
-		
-		
-		
-		
-		
 
+		// Now that login was successfull we can start the game loop:
+
+		boolean accepted;
+		boolean move = false;
+		AcceptMessageType amt;
+		DisconnectMessageType dmt;
+		AwaitMoveMessageType ammt;
+		MoveMessageType mmt;
+		BoardType bt = null;
+		TreasureType tt = null;
+		List<TreasureType> foundTT = null;
+		List<TreasuresToGoType> togoTT = null;
+		while (true) {
+			accepted = false;
+
+			while (!accepted) {
+				try {
+					mc = instream.readMazeCom();
+				} catch (UnmarshalException | IOException e) {
+					// TODO do stuff
+				}
+
+				switch (mc.getMcType()) {
+				case ACCEPT:
+					amt = mc.getAcceptMessage();
+					if (amt.isAccept()) {
+						accepted = true;
+						move = false;
+						logger.info("Your move was accepted.");
+						countFailedMoves = 0;
+						break;
+					} else {
+						logger.warning("Your move was not accepted!");
+						countFailedMoves++;
+						countTotalFailedMoves++;
+						move = true;
+					}
+					break;
+
+				case AWAITMOVE:
+					ammt = mc.getAwaitMoveMessage();
+					bt = ammt.getBoard();
+					tt = ammt.getTreasure();
+					foundTT = ammt.getFoundTreasures();
+					togoTT = ammt.getTreasuresToGo();
+					move = true;
+					break;
+
+				case DISCONNECT: // TODO should not happen
+					break;
+
+				default:
+					// TODO should never happen
+				}
+				
+				if (move) {
+					mmt = player.getZug(bt, tt, foundTT, togoTT);
+					mc = new MazeCom();
+					mc.setId(id);
+					mc.setMcType(MazeComType.MOVE);
+					mc.setMoveMessage(mmt);
+					outstream.write(mc);
+				}
+			}
+
+		}
+
+	}
+	
+	public static int getFailedMoves() {
+		return countFailedMoves;
+	}
+	
+	public static int getTotalFailedMoves() {
+		return countTotalFailedMoves;
 	}
 
 }
