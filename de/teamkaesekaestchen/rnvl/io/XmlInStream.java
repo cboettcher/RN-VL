@@ -35,7 +35,7 @@ public class XmlInStream extends UTFInputStream {
 				// muss getResourceAsStream() statt getResource() sein
 				// damit es auch in jars funktioniert
 				InputStream resourceAsStream = getClass().getResourceAsStream(
-						"/XSD/mazeCom.xsd"); //$NON-NLS-1$
+						"/de/teamkaesekaestchen/rnvl/xsd/mazeCom.xsd"); //$NON-NLS-1$
 
 				// convert inputstream to file, no better implementation available
 				File tempFile = File.createTempFile("temp", ".xsd");  //$NON-NLS-1$//$NON-NLS-2$
@@ -53,8 +53,7 @@ public class XmlInStream extends UTFInputStream {
 				tempFile.deleteOnExit();
 			} catch (SAXException e) {
 				e.printStackTrace();
-//				Debug.print(
-//						Messages.getString("XmlInStream.XMLSchemaFailed"), //$NON-NLS-1$
+//				Debug.print(Messages.getString("XmlInStream.XMLSchemaFailed"), //$NON-NLS-1$
 //						DebugLevel.DEFAULT);
 			} catch (FileNotFoundException e) {
 				e.printStackTrace();
