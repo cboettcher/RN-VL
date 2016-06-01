@@ -29,7 +29,7 @@ import de.teamkaesekaestchen.rnvl.prot.TreasuresToGoType;
 public class Main {
 
 	private static String host = "localhost";
-	private static int port = 8080;
+	private static int port = 5123;
 	
 	private static volatile int countFailedMoves = 0;
 	private static volatile int countTotalFailedMoves = 0;
@@ -40,14 +40,53 @@ public class Main {
 	private static Socket socket;
 	private static XmlInStream instream;
 	private static XmlOutStream outstream;
-	private static int id = -1;
+	public static int id = -1;
 
 	public static final int MAX_LOGIN_TRIES = 5;
 	public static final String TEAM = "team kaesekaestchen";
 	private static final Logger logger = Logger.getLogger("Main");
+	
+	
 	public static final int UNKNOWN_HOST_CODE = 1000;
 	public static final int CONNECTION_FAILED_CODE = 1001;
 	public static final int LOGIN_FAILED_CODE = 1002;
+	
+	private static int login() {
+		MazeCom mc;
+		boolean loginSuccess = false;
+		LoginMessageType lmt;
+		LoginReplyMessageType lrmt;
+		int c = 0;
+		int _id = -1;
+
+		while (!loginSuccess && c < MAX_LOGIN_TRIES) {
+			lmt = new LoginMessageType();
+			lmt.setName(TEAM);
+			mc = new MazeCom();
+			mc.setLoginMessage(lmt);
+			mc.setMcType(MazeComType.LOGIN);
+			outstream.write(mc);
+			try {
+				mc = instream.readMazeCom();
+			} catch (UnmarshalException | IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+			if (mc.getMcType().equals(MazeComType.LOGINREPLY)) {
+				lrmt = mc.getLoginReplyMessage();
+				_id = lrmt.getNewID();
+				loginSuccess = true;
+			} else if (mc.getMcType().equals(MazeComType.ACCEPT)) {
+				logger.info("Login failed, trying again.");
+				logger.info("ErrorType is " + mc.getAcceptMessage().getErrorCode().value());
+			} else {
+				break;
+			}
+			c++;
+		}
+		
+		return _id;
+	}
 
 	public static void main(String[] args) {
 		if (args.length >= 1) {
@@ -96,39 +135,9 @@ public class Main {
 
 		MazeCom mc = null;
 
-		boolean loginSuccess = false;
-		LoginMessageType lmt;
-		LoginReplyMessageType lrmt;
-		int c = 0;
+		id = login();
 
-		while (!loginSuccess && c < MAX_LOGIN_TRIES) {
-			lmt = new LoginMessageType();
-			lmt.setName(TEAM);
-			mc = new MazeCom();
-			mc.setLoginMessage(lmt);
-			mc.setId(id);
-			mc.setMcType(MazeComType.LOGIN);
-			outstream.write(mc);
-			try {
-				mc = instream.readMazeCom();
-			} catch (UnmarshalException | IOException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
-			if (mc.getMcType().equals(MazeComType.LOGINREPLY)) {
-				lrmt = mc.getLoginReplyMessage();
-				id = lrmt.getNewID();
-				loginSuccess = true;
-			} else if (mc.getMcType().equals(MazeComType.ACCEPT)) {
-				logger.info("Login failed, trying again.");
-				logger.info("ErrorType is " + mc.getAcceptMessage().getErrorCode().value());
-			} else {
-				break;
-			}
-			c++;
-		}
-
-		if (!loginSuccess) {
+		if (id < 0) {
 			logger.warning("Login failed!");
 			logger.warning("Shutting down program.");
 			System.exit(LOGIN_FAILED_CODE);
