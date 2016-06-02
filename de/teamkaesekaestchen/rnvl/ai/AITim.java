@@ -18,7 +18,7 @@ public class AITim implements Player {
 			List<TreasureType> foundTT, List<TreasuresToGoType> togoTT) {
 		
 		logger.info("Ai Tim ist gestartet");
-		
+		System.out.println(Main.getFailedMoves());
 		if(Main.getFailedMoves()>5){
 			System.exit(1);
 		}
@@ -62,12 +62,7 @@ public class AITim implements Player {
 		pt.setRow(1);
 		mmt.setShiftPosition(pt);
 		
-		mmt.setShiftCard(bt.getRow().get(6).getCol().get(1));
-		
-		System.out.println(mmt.getShiftCard().getOpenings().isTop());
-		System.out.println(mmt.getShiftCard().getOpenings().isRight());
-		System.out.println(mmt.getShiftCard().getOpenings().isBottom());
-		System.out.println(mmt.getShiftCard().getOpenings().isLeft());
+		mmt.setShiftCard(bt.getShiftCard());
 		
 		
 		
