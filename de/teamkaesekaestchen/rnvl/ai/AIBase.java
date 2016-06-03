@@ -5,9 +5,11 @@ import java.util.List;
 
 import de.teamkaesekaestchen.rnvl.net.Main;
 import de.teamkaesekaestchen.rnvl.prot.BoardType;
+import de.teamkaesekaestchen.rnvl.prot.CardType;
 import de.teamkaesekaestchen.rnvl.prot.PositionType;
 import de.teamkaesekaestchen.rnvl.prot.TreasureType;
 import de.teamkaesekaestchen.rnvl.prot.TreasuresToGoType;
+import de.teamkaesekaestchen.rnvl.prot.CardType.Openings;
 
 public abstract class AIBase implements Player {
 
@@ -27,6 +29,24 @@ public abstract class AIBase implements Player {
 		pt.setCol(column);
 		pt.setRow(row);
 		return pt;
+	}
+	
+	/**
+	 * returns a new CardType that is the old one rotated 90 degrees to the right
+	 * @param ct
+	 * @return
+	 */
+	public static CardType rotateCardRight(CardType ct) {
+		CardType ret = new CardType();
+		Openings o = new Openings();
+		ret.setPin(ct.getPin());
+		ret.setTreasure(ct.getTreasure());
+		o.setRight(ct.getOpenings().isTop());
+		o.setBottom(ct.getOpenings().isRight());
+		o.setLeft(ct.getOpenings().isBottom());
+		o.setTop(ct.getOpenings().isLeft());
+	
+		return ret;		
 	}
 
 	/**
