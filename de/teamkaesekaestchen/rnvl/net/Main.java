@@ -45,7 +45,7 @@ public class Main {
 	public static int id = -1;
 
 	public static final int MAX_LOGIN_TRIES = 5;
-	public static final String TEAM = "team kaesekaestchen";
+	public static final String TEAM = "Team Kaesekaestchen";
 	private static final Logger logger = Logger.getLogger("Main");
 	
 	
