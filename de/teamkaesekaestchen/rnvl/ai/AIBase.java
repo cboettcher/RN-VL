@@ -16,6 +16,12 @@ public abstract class AIBase implements Player {
 
 	List<PositionType> possibleShiftPositions;
 
+	/**
+	 * creates a PositionType-Object from the given row and column
+	 * @param row
+	 * @param column
+	 * @return
+	 */
 	public static PositionType createPositionType(int row, int column) {
 		PositionType pt = new PositionType();
 		pt.setCol(column);
@@ -23,6 +29,13 @@ public abstract class AIBase implements Player {
 		return pt;
 	}
 
+	/**
+	 * gets all possible Positions for inserting the card and stores them in a list
+	 * @param bt
+	 * @param tt
+	 * @param foundTT
+	 * @param togoTT
+	 */
 	protected void getShiftPositions(BoardType bt, TreasureType tt, List<TreasureType> foundTT,
 			List<TreasuresToGoType> togoTT) {
 		possibleShiftPositions = new ArrayList<>();
@@ -47,9 +60,18 @@ public abstract class AIBase implements Player {
 				}
 			}
 		}
+		
+		
 
 	}
 
+	/**
+	 * gets the current Position and stores it in class Variables
+	 * @param bt
+	 * @param tt
+	 * @param foundTT
+	 * @param togoTT
+	 */
 	protected void currentPosition(BoardType bt, TreasureType tt, List<TreasureType> foundTT,
 			List<TreasuresToGoType> togoTT) {
 		for (int i = 0; i < 7; i++) {
