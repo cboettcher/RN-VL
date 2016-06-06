@@ -25,15 +25,12 @@ public class AITim implements Player {
 		
 		this.bt = new Board(btt);
 		
-		System.out.println(tt.toString());
-		
-		System.out.println(Main.getTotalFailedMoves());
 		if(Main.getTotalFailedMoves()>0){
 			System.exit(1);
 		}
 		
 		aktpos = new Position(bt.findPlayer(Main.id));
-		treasurepos = new Position(bt.findTreasure(tt));
+//		treasurepos = new Position(bt.findTreasure(tt));
 		
 //		for(PositionType poo : bt.getAllReachablePositions(p)){
 //			System.out.println("Moeglich: ("+poo.getRow()+"|"+poo.getCol()+")");
@@ -56,14 +53,16 @@ public class AITim implements Player {
 					mmt.setShiftPosition(new Position(i, j));
 					Board newBoard = bt.fakeShift(mmt);//Spalten
 					aktpos = new Position(newBoard.findPlayer(Main.id));
-					treasurepos = new Position(newBoard.findTreasure(tt));
-					for(PositionType pp : newBoard.getAllReachablePositions(aktpos)){
-						if(pp.getCol() == treasurepos.getCol() && pp.getRow() == treasurepos.getRow()){
-							mmt.setNewPinPos(new Position(treasurepos));
-							return mmt;
+					if(newBoard.findTreasure(tt) != null){
+						treasurepos = new Position(newBoard.findTreasure(tt));
+						for(PositionType pp : newBoard.getAllReachablePositions(aktpos)){
+							if(pp.getCol() == treasurepos.getCol() && pp.getRow() == treasurepos.getRow()){
+								mmt.setNewPinPos(new Position(treasurepos));
+								return mmt;
+							}
 						}
+						moveList.add(new MoveMessage(mmt));
 					}
-					moveList.add(new MoveMessage(mmt));
 				}
 				
 				if(bt.getForbidden()!= null &&bt.getForbidden().getCol() == i && bt.getForbidden().getRow() == j){
@@ -74,14 +73,16 @@ public class AITim implements Player {
 					mmt.setShiftPosition(new Position(j, i));//Reihen
 					Board newBoard = bt.fakeShift(mmt);
 					aktpos = new Position(newBoard.findPlayer(Main.id));
-					treasurepos = new Position(newBoard.findTreasure(tt));
-					for(PositionType pp : newBoard.getAllReachablePositions(aktpos)){
-						if(pp.getCol() == treasurepos.getCol() && pp.getRow() == treasurepos.getRow()){
-							mmt.setNewPinPos(new Position(treasurepos));
-							return mmt;
-						}
+					if (newBoard.findTreasure(tt) != null){
+						treasurepos = new Position(newBoard.findTreasure(tt));
+						for(PositionType pp : newBoard.getAllReachablePositions(aktpos)){
+							if(pp.getCol() == treasurepos.getCol() && pp.getRow() == treasurepos.getRow()){
+								mmt.setNewPinPos(new Position(treasurepos));
+								return mmt;
+							}
+						}	
+						moveList.add(new MoveMessage(mmt));
 					}
-					moveList.add(new MoveMessage(mmt));
 					
 				}
 			}
