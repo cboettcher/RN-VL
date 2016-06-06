@@ -25,10 +25,12 @@ public class AITim implements Player {
 		
 		this.bt = new Board(btt);
 		
-//		System.out.println(Main.getFailedMoves());
-//		if(Main.getFailedMoves()>5){
-//			System.exit(1);
-//		}
+		System.out.println(tt.toString());
+		
+		System.out.println(Main.getTotalFailedMoves());
+		if(Main.getTotalFailedMoves()>0){
+			System.exit(1);
+		}
 		
 		aktpos = new Position(bt.findPlayer(Main.id));
 		treasurepos = new Position(bt.findTreasure(tt));
@@ -53,8 +55,8 @@ public class AITim implements Player {
 					mmt.setShiftCard(c);
 					mmt.setShiftPosition(new Position(i, j));
 					Board newBoard = bt.fakeShift(mmt);//Spalten
-					aktpos = new Position(bt.findPlayer(Main.id));
-					treasurepos = new Position(bt.findTreasure(tt));
+					aktpos = new Position(newBoard.findPlayer(Main.id));
+					treasurepos = new Position(newBoard.findTreasure(tt));
 					for(PositionType pp : newBoard.getAllReachablePositions(aktpos)){
 						if(pp.getCol() == treasurepos.getCol() && pp.getRow() == treasurepos.getRow()){
 							mmt.setNewPinPos(new Position(treasurepos));
@@ -71,8 +73,8 @@ public class AITim implements Player {
 				for(Card c : shiftCard.getPossibleRotations()){
 					mmt.setShiftPosition(new Position(j, i));//Reihen
 					Board newBoard = bt.fakeShift(mmt);
-					aktpos = new Position(bt.findPlayer(Main.id));
-					treasurepos = new Position(bt.findTreasure(tt));
+					aktpos = new Position(newBoard.findPlayer(Main.id));
+					treasurepos = new Position(newBoard.findTreasure(tt));
 					for(PositionType pp : newBoard.getAllReachablePositions(aktpos)){
 						if(pp.getCol() == treasurepos.getCol() && pp.getRow() == treasurepos.getRow()){
 							mmt.setNewPinPos(new Position(treasurepos));
@@ -87,8 +89,12 @@ public class AITim implements Player {
 		
 		mmt = moveList.get((int)(Math.random()*moveList.size()));
 		
+		aktpos = new Position(bt.findPlayer(Main.id));
+		
 		mmt.setNewPinPos(aktpos);
 		Board newBoard = bt.fakeShift(mmt);
+		
+		aktpos = new Position(newBoard.findPlayer(Main.id));
 		
 		List<PositionType> positionList = newBoard.getAllReachablePositions(aktpos);
 		mmt.setNewPinPos(positionList.get((int)(Math.random()*positionList.size())));
