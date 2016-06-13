@@ -11,6 +11,7 @@ import java.util.logging.Logger;
 
 import javax.xml.bind.UnmarshalException;
 
+import de.teamkaesekaestchen.rnvl.ai.AITim;
 import de.teamkaesekaestchen.rnvl.ai.Player;
 import de.teamkaesekaestchen.rnvl.io.XmlInStream;
 import de.teamkaesekaestchen.rnvl.io.XmlOutStream;
@@ -25,6 +26,7 @@ import de.teamkaesekaestchen.rnvl.prot.MazeComType;
 import de.teamkaesekaestchen.rnvl.prot.MoveMessageType;
 import de.teamkaesekaestchen.rnvl.prot.TreasureType;
 import de.teamkaesekaestchen.rnvl.prot.TreasuresToGoType;
+import de.teamkaesekaestchen.rnvl.prot.WinMessageType;
 
 public class Main {
 
@@ -43,7 +45,7 @@ public class Main {
 	public static int id = -1;
 
 	public static final int MAX_LOGIN_TRIES = 5;
-	public static final String TEAM = "team kaesekaestchen";
+	public static final String TEAM = "Team Kaesekaestchen";
 	private static final Logger logger = Logger.getLogger("Main");
 	
 	
@@ -69,8 +71,7 @@ public class Main {
 			try {
 				mc = instream.readMazeCom();
 			} catch (UnmarshalException | IOException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
+				logger.severe(e.getMessage());
 			}
 			if (mc.getMcType().equals(MazeComType.LOGINREPLY)) {
 				lrmt = mc.getLoginReplyMessage();
@@ -97,7 +98,8 @@ public class Main {
 		}
 		logger.setLevel(Level.INFO);
 
-		// TODO setPlayer
+		// TODO select AI type depending on commandline arguments
+		player =  new AITim();
 
 		try {
 			socket = new Socket(host, port);
@@ -146,23 +148,26 @@ public class Main {
 		// Now that login was successfull we can start the game loop:
 
 		boolean accepted;
+		boolean playing = true;
 		boolean move = false;
+		int winnerID = -1;
 		AcceptMessageType amt;
 		DisconnectMessageType dmt;
 		AwaitMoveMessageType ammt;
+		WinMessageType wmt;
 		MoveMessageType mmt;
 		BoardType bt = null;
 		TreasureType tt = null;
 		List<TreasureType> foundTT = null;
 		List<TreasuresToGoType> togoTT = null;
-		while (true) {
+		while (playing) {
 			accepted = false;
 
 			while (!accepted) {
 				try {
 					mc = instream.readMazeCom();
 				} catch (UnmarshalException | IOException e) {
-					// TODO do stuff
+					logger.severe(e.getMessage());
 				}
 
 				switch (mc.getMcType()) {
@@ -191,7 +196,25 @@ public class Main {
 					move = true;
 					break;
 
-				case DISCONNECT: // TODO should not happen
+				case DISCONNECT:
+					dmt = mc.getDisconnectMessage();
+					logger.warning("Server closed connection.");
+					logger.info("Error of DisconnectMessage: " + dmt.getErrorCode() + " " + dmt.getName());
+					playing = false;
+					accepted = true;
+					move = false;
+					break;
+				
+				case WIN:
+					wmt = mc.getWinMessage();
+					winnerID = wmt.getWinner().getId();
+					if (winnerID == id) {
+						logger.info("You have won this game!");
+						System.out.println("Spiel gewonnen");
+					} else {
+						logger.info("You have lost this game.");
+						System.out.println("Spiel verloren");
+					}
 					break;
 
 				default:
