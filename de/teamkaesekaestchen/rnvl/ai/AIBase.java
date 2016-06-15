@@ -3,6 +3,8 @@ package de.teamkaesekaestchen.rnvl.ai;
 import java.util.ArrayList;
 import java.util.List;
 
+import de.teamkaesekaestchen.rnvl.impl.Board;
+import de.teamkaesekaestchen.rnvl.impl.Position;
 import de.teamkaesekaestchen.rnvl.net.Main;
 import de.teamkaesekaestchen.rnvl.prot.BoardType;
 import de.teamkaesekaestchen.rnvl.prot.CardType;
@@ -13,8 +15,10 @@ import de.teamkaesekaestchen.rnvl.prot.CardType.Openings;
 
 public abstract class AIBase implements Player {
 
-	private int[] aktpos = new int[2];
-	private int[] treasurepos = new int[2];
+	protected Position aktpos;
+	protected Position treasurepos;
+	
+	protected Board bt;
 
 	List<PositionType> possibleShiftPositions;
 
@@ -99,8 +103,8 @@ public abstract class AIBase implements Player {
 
 				if (bt.getRow().get(i).getCol().get(j).getTreasure() != null) {
 					if (bt.getRow().get(i).getCol().get(j).getTreasure().equals(tt)) {
-						treasurepos[0] = i;
-						treasurepos[1] = j;
+						treasurepos.setCol(i);// = i;
+						treasurepos.setRow(j);// = j;
 
 					}
 				}
@@ -108,8 +112,8 @@ public abstract class AIBase implements Player {
 				if (bt.getRow().get(i).getCol().get(j).getPin().getPlayerID().size() != 0) {
 					for (Integer id : bt.getRow().get(i).getCol().get(j).getPin().getPlayerID()) {
 						if (id == Main.id) {
-							aktpos[0] = i;
-							aktpos[1] = j;
+							aktpos.setCol(i);//[0] = i;
+							aktpos.setRow(j);// = j;
 						}
 					}
 				}
