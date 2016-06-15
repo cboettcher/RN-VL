@@ -1,0 +1,450 @@
+package de.teamkaesekaestchen.rnvl.ai;
+
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import de.teamkaesekaestchen.rnvl.net.Main;
+import de.teamkaesekaestchen.rnvl.prot.BoardType;
+import de.teamkaesekaestchen.rnvl.prot.CardType;
+import de.teamkaesekaestchen.rnvl.prot.MoveMessageType;
+import de.teamkaesekaestchen.rnvl.prot.TreasureType;
+import de.teamkaesekaestchen.rnvl.prot.TreasuresToGoType;
+
+/**
+ * @author Tobias
+ *
+ * Spielder id unter Main.id
+ * BoardType board enth�llt das gesammte bord, den schiebestein und die verbotene position
+ * TreasureType treasure enth�llt infos �ber den n�chsten zu findenden schatz
+ * List<TreasureType> foundTreasures enth�llt alle sch�tze die schon gefunden wurden (vom spieler? oder allen spielern)
+ * List<TreasuresToGoType> die anzahl an sch�tzen die alle spieler noch brauchen um das spiel abzuschlie�en
+ * 
+ * KI Zug Berechnung:
+ * 1. Erstelle in einer Liste alle 48 g�ltigen Z�ge
+ * 2. Filtere alle Z�ge die nicht g�ltig sind (gibt es ung�ltige z�ge?)
+ * 3. Bewerte alle Z�ge und w�hle den Besten zug aus:
+ * 		Zugbewertung:
+ * 			- Schatz erreicht: +1000 //muss immer vorgezogen werden
+ * 			- K�rzeste m�gliche Distanz zum Schatz nach move: 
+ * 				Distanz zum Schatz in Manhattan Norm: dist
+ * 				Punkte: y = 1.02040816327*Math.pow(dist, 2) + -50.0*dist + 500.0 
+ * 			- Erreichbare Felder f�r den eigenen Spieler: +5
+ * 			- Erreichbare Sch�tze f�r den eigenen Spieler: schon gefunden +0, noch nicht gefunden +10
+ * 			- Erreichbare Felder f�r den n�chsten Spieler: -4
+ * 			- Erreichbare Sch�tze f�r den n�chsten Spieler: -8
+ * 			- Erreichbare Felder f�r die weiteren Spieler: -2
+ * 			- Erreichbare Sch�tze f�r die weiteren Spieler: -4
+ */
+public class AITobias implements Player {
+	
+	//{row, col}
+	private static final int[][] shiftPositions = new int[][] {{0, 1}, {0, 3}, {0, 5}, {1, 6}, {3, 6}, {5, 6}, 
+		{6, 1}, {6, 3}, {6, 5}, {1, 0}, {3, 0}, {5, 0}};
+	
+	private BoardType board;
+	
+	private TreasureType searchingTreasure;
+	
+	private int myId;
+	
+	@Override
+	public MoveMessageType getZug(BoardType board, TreasureType treasure, List<TreasureType> foundTreasures,
+			List<TreasuresToGoType> treasuresToGo) {
+		myId = Main.id;
+		searchingTreasure = treasure;
+		this.board = board;
+		List<ShiftRating> shiftRatings = getPossibleShifts();
+		Collections.sort(shiftRatings);
+		return null;
+	}
+	
+	private int getNumPlayers() {
+		int players = 0;
+		for (BoardType.Row row : board.getRow()) {
+			for (CardType card : row.getCol()) {
+				players += card.getPin().getPlayerID().size();
+			}
+		}
+		return players;
+	}
+	
+	private int getNextPlayerId(int myId, int players) {
+		return (myId+1)%players;
+	}
+	
+	private Map<Integer, int[]> getPlayersPositions() {
+		return getPlayersPositions(board);
+	}
+	private Map<Integer, int[]> getPlayersPositions(BoardType board) {
+		Map<Integer, int[]> positions = new HashMap<Integer, int[]>(4);
+		for (int i = 0; i < board.getRow().size(); i++) {
+			for (int j = 0; j < board.getRow().get(i).getCol().size(); j++) {
+				for (int id : board.getRow().get(i).getCol().get(j).getPin().getPlayerID()) {
+					positions.put(id, new int[] {j, i});
+				}
+			}
+		}
+		return positions;
+	}
+	
+	private int[] getNextTreasurePos(TreasureType treasure) {
+		for (int i = 0; i < board.getRow().size(); i++) {
+			for (int j = 0; j < board.getRow().get(i).getCol().size(); j++) {
+				if (board.getRow().get(i).getCol().get(j).getTreasure().equals(treasure)) {
+					return new int[] {j, i};
+				}
+			}
+		}
+		return null;
+	}
+	
+	private List<ShiftRating> getPossibleShifts() {
+		List<ShiftRating> shifts = new ArrayList<ShiftRating>(48);
+		List<CardType> rotatedCards = new ArrayList<CardType>(4);
+		CardType shiftCard = board.getShiftCard();
+		for (int i = 0; i < 4; i++) {
+			rotatedCards.add(rotateCard(shiftCard, i));
+		}
+		for (CardType card : rotatedCards) {
+			for (int[] shift : shiftPositions) {
+				RevertableBoard tmpBoard = shiftCard(card, shift);
+				ShiftRating sr = new ShiftRating(shift, getBoardRating(tmpBoard.getBoard()));
+				shifts.add(sr);
+				tmpBoard.revert();
+			}
+		}
+		return shifts;
+	}
+	
+	private static CardType rotateCard(CardType card, int rotations) {
+		CardType rotated = new CardType();
+		rotated.setPin(card.getPin());
+		rotated.setTreasure(card.getTreasure());
+		CardType.Openings open = card.getOpenings();
+		CardType.Openings newOpenings = new CardType.Openings();
+		boolean openTop = open.isTop();
+		boolean openRight = open.isRight();
+		boolean openBottom = open.isBottom();
+		boolean openLeft = open.isLeft();
+		switch (rotations) {
+			case 0:
+				//don't rotate
+				break;
+			case 1:
+				newOpenings.setTop(openLeft);
+				newOpenings.setRight(openTop);
+				newOpenings.setBottom(openRight);
+				newOpenings.setLeft(openBottom);
+				break;
+			case 2:
+				newOpenings.setTop(openBottom);
+				newOpenings.setRight(openLeft);
+				newOpenings.setBottom(openTop);
+				newOpenings.setLeft(openRight);
+				break;
+			case 3:
+				newOpenings.setTop(openRight);
+				newOpenings.setRight(openBottom);
+				newOpenings.setBottom(openLeft);
+				newOpenings.setLeft(openTop);
+				break;
+			default:
+				throw new IllegalArgumentException("Error: Unknown rotation number (" + rotations + ") should be between 0 and 3");
+		}
+		rotated.setOpenings(open);
+		return rotated;
+	}
+	
+	/**
+	 * Zugbewertung:
+	 * 	- Schatz erreicht: +1000 //muss immer vorgezogen werden
+	 * 	- K�rzeste m�gliche Distanz zum Schatz nach move: 
+	 * 			Distanz zum Schatz in Manhattan Norm: dist
+	 * 		Punkte: y = 1.02040816327*Math.pow(dist, 2) + -50.0*dist + 500.0 
+	 * 	- Erreichbare Felder f�r den eigenen Spieler: +5
+	 * 	- Erreichbare Sch�tze f�r den eigenen Spieler: schon gefunden +0, noch nicht gefunden +10
+	 * 	- Erreichbare Felder f�r den n�chsten Spieler: -4
+	 * 	- Erreichbare Sch�tze f�r den n�chsten Spieler: -8
+	 * 	- Erreichbare Felder f�r die weiteren Spieler: -2
+	 * 	- Erreichbare Sch�tze f�r die weiteren Spieler: -4
+	 */
+	private int getBoardRating(BoardType board) {
+		int rating = 0;
+		int[][] graph = buildGraph(board);
+		//run floyd warshall on the graph
+		for (int i = 0; i < graph.length; i++) {
+			for (int j = 0; j < graph.length; j++) {
+				for (int k = 0; k < graph.length; k++) {
+					graph[j][k] = Math.min(graph[j][k], graph[j][i] + graph[i][k]);
+				}
+			}
+		}
+		int[] startPosition = getMyPosition();
+		int startingIndex = startPosition[0]*7+startPosition[1];
+		List<int[]> reachable = getReachableFields(board, graph, myId);
+		//Schatz erreichbar:
+		int[] treasurePosition = getTreasurePosition(searchingTreasure);
+		if (graph[startingIndex][treasurePosition[0]*7+treasurePosition[1]] != Integer.MAX_VALUE) {
+			rating += 1000;
+		}
+		else {
+			//geringste distanz zum schatz finden
+			int shortestDistance = Integer.MAX_VALUE;
+			for (int[] field : reachable) {
+				int dist = Math.abs(treasurePosition[0]-field[0]) + Math.abs(treasurePosition[1]-field[1]);
+				if (dist < shortestDistance) {
+					shortestDistance = dist;
+				}
+			}
+			rating += 1.02040816327*Math.pow(shortestDistance, 2) + -50.0*shortestDistance + 500.0;
+		}
+		//erreichbare Felder
+		rating += reachable.size()*5;
+		//erreichbare Sch�tze
+		rating += getReachableTreasures(board, graph, myId).size()*10;
+		//erreichbare Felder/Sch�tze f�r andere Spieler
+		for (int i = 0; i < 4; i++) {
+			if (i != myId && getPlayerPosition(i) != null) {
+				rating -= getReachableFields(board, graph, i).size()*2;
+				rating -= getReachableTreasures(board, graph, i).size()*4;
+			}
+		}
+		return rating;
+	}
+	
+	private List<int[]> getReachableFields(BoardType board, int[][] graph, int player) {
+		int[] startPosition = getPlayerPosition(player);
+		int startingIndex = startPosition[0]*7+startPosition[1];
+		List<int[]> reachable = new ArrayList<int[]>(49);
+		for (int i = 0; i < graph.length; i++) {
+			if (graph[startingIndex][i] != Integer.MAX_VALUE) {
+				reachable.add(new int[] {i/7, i%7});
+			}
+		}
+		return reachable;
+	}
+	private List<TreasureType> getReachableTreasures(BoardType board, int[][] graph, int player) {
+		int[] startPosition = getPlayerPosition(player);
+		int startingIndex = startPosition[0]*7+startPosition[1];
+		List<TreasureType> reachable = new ArrayList<TreasureType>(49);
+		for (int i = 0; i < graph.length; i++) {
+			if (graph[startingIndex][i] != Integer.MAX_VALUE) {
+				TreasureType treasure = board.getRow().get(i/7).getCol().get(i%7).getTreasure();
+				if (treasure != null) {
+					reachable.add(treasure);
+				}
+			}
+		}
+		return reachable;
+	}
+	
+	private int[] getMyPosition() {
+		for (int i = 0; i < board.getRow().size(); i++) {
+			for (int j = 0; j < board.getRow().size(); j++) {
+				if (board.getRow().get(i).getCol().get(j).getPin().getPlayerID().contains(myId)) {
+					return new int[] {i, j};
+				}
+			}
+		}
+		return null;
+	}
+	
+	private int[] getPlayerPosition(int id) {
+		for (int i = 0; i < board.getRow().size(); i++) {
+			for (int j = 0; j < board.getRow().size(); j++) {
+				if (board.getRow().get(i).getCol().get(j).getPin().getPlayerID().contains(id)) {
+					return new int[] {i, j};
+				}
+			}
+		}
+		return null;
+	}
+	
+	private int[] getTreasurePosition(TreasureType treasure) {
+		for (int i = 0; i < board.getRow().size(); i++) {
+			for (int j = 0; j < board.getRow().size(); j++) {
+				if (board.getRow().get(i).getCol().get(j).getTreasure().equals(treasure)) {
+					return new int[] {i, j};
+				}
+			}
+		}
+		return null;
+	}
+	
+	/**
+	 * Build a graph if the board for a floyd-warshall algroithm.
+	 */
+	private int[][] buildGraph(BoardType board) {
+		int[][] graph = new int[49][49];
+		for (int i = 0; i < graph.length; i++) {
+			for (int j = 0; j < graph[i].length; j++) {
+				graph[i][j] = Integer.MAX_VALUE;
+			}
+		}
+		for (int i = 0; i < graph.length; i++) {
+			graph[i][i] = 0;
+		}
+		for (int i = 0; i < graph.length; i++) {
+			for (int[] connection : getConnectedFields(board, i/7, i%7)) {
+				graph[i][connection[0]*7 + connection[1]] = 1;
+			}
+		}
+		return graph;
+	}
+	
+	private List<int[]> getConnectedFields(BoardType board, int row, int col) {
+		List<int[]> connections = new ArrayList<int[]>(4);
+		int[][] possibleConnections = new int[][] {{row-1, col}, {row, col+1}, {row+1, col}, {row, col-1}};
+		for (int i = 0; i < possibleConnections.length; i++) {
+			if (possibleConnections[i][0] >= 0 && possibleConnections[i][0] <= 6 && 
+					possibleConnections[i][1] >= 0 && possibleConnections[i][1] <= 6) {
+				CardType conCard = board.getRow().get(possibleConnections[i][0]).getCol().get(possibleConnections[i][1]);
+				CardType currentCard = board.getRow().get(row).getCol().get(col);
+				switch (i) {
+					case 0:
+						if (conCard.getOpenings().isBottom() && currentCard.getOpenings().isTop()) {
+							connections.add(possibleConnections[i]);
+						}
+						break;
+					case 1:
+						if (conCard.getOpenings().isLeft() && currentCard.getOpenings().isRight()) {
+							connections.add(possibleConnections[i]);
+						}
+						break;
+					case 2:
+						if (conCard.getOpenings().isTop() && currentCard.getOpenings().isBottom()) {
+							connections.add(possibleConnections[i]);
+						}
+						break;
+					case 3:
+						if (conCard.getOpenings().isRight() && currentCard.getOpenings().isLeft()) {
+							connections.add(possibleConnections[i]);
+						}
+						break;
+				}
+			}
+		}
+		return connections;
+	}
+	
+	private RevertableBoard shiftCard(CardType card, int[] shiftPosition) {
+		CardType newShift = null;
+		if (shiftPosition[1] % 6 == 0 && shiftPosition[0] % 2 == 1) {
+			int row = shiftPosition[0];
+			int start = (shiftPosition[1] + 6) % 12;
+			newShift = getCard(board, row, start);
+			if (start == 6) {
+				for (int i = 6; i > 0; i--) {
+					setCard(board, row, i, getCard(board, row, i-1));
+				}
+			}
+			else {
+				for (int i = 0; i < 6; i++) {
+					setCard(board, row, i, getCard(board, row, i + 1));
+				}
+			}
+		}
+		else if (shiftPosition[0] % 6 == 0 && shiftPosition[1] % 2 == 1) {
+			int col = shiftPosition[1];
+			int start = (shiftPosition[0] + 6) % 12;
+			newShift = getCard(board, start, col);
+			if (start == 6) {
+				for (int i = 6; i > 0; --i) {
+					setCard(board, i, col, getCard(board, i - 1, col));
+				}
+			}
+			else {
+				for (int i = 0; i < 6; ++i) {
+					setCard(board, i, col, getCard(board, i + 1, col));
+				}
+			}
+		}
+		if (!newShift.getPin().getPlayerID().isEmpty()) {
+			CardType.Pin temp = newShift.getPin();
+			newShift.setPin(new CardType.Pin());
+			card.setPin(temp);
+		}
+		setCard(board, shiftPosition[0], shiftPosition[1], card);
+		int[] reverseShift = new int[2];
+		if (shiftPosition[0] % 6 == 0) {
+			reverseShift[0] = (shiftPosition[0]+6)%12;
+			reverseShift[1] = shiftPosition[1];
+		}
+		else {
+			reverseShift[0] = shiftPosition[0];
+			reverseShift[1] = (shiftPosition[1]+6)%12;
+		}
+		return new RevertableBoard(board, newShift, reverseShift);
+	}
+	
+	private static void setCard(BoardType board, int row, int col, CardType c) {
+		board.getRow().get(row).getCol().remove(col);
+		board.getRow().get(row).getCol().add(col, c);
+	}
+	private static CardType getCard(BoardType board, int row, int col) {
+		return board.getRow().get(row).getCol().get(col);
+	}
+	
+	private class ShiftRating implements Comparable<ShiftRating> {
+		
+		private int[] shiftPosition;
+		private int rating;
+		
+		public ShiftRating(int[] shiftPosition, int rating) {
+			this.shiftPosition = shiftPosition;
+			this.rating = rating;
+		}
+
+		@Override
+		public int compareTo(ShiftRating o) {
+			if (getRating() > o.getRating()) {
+				return 1;
+			}
+			else if (getRating() < o.getRating()) {
+				return -1;
+			}
+			return 0;
+		}
+		
+		public int[] getShiftPosition() {
+			return shiftPosition;
+		}
+		public void setShiftPosition(int[] shiftPosition) {
+			this.shiftPosition = shiftPosition;
+		}
+		
+		public int getRating() {
+			return rating;
+		}
+		public void setRating(int rating) {
+			this.rating = rating;
+		}
+	}
+	
+	private class RevertableBoard {
+		
+		private BoardType board;
+		private CardType outshiftedCard;
+		private int[] reverseShift;
+		
+		public RevertableBoard(BoardType board, CardType outshiftedCard, int[] reverseShift) {
+			this.board = board;
+			this.outshiftedCard = outshiftedCard;
+			this.reverseShift = reverseShift;
+		}
+		
+		public BoardType revert() {
+			return shiftCard(outshiftedCard, reverseShift).getBoard();
+		}
+		
+		public BoardType getBoard() {
+			return board;
+		}
+		public void setBoard(BoardType board) {
+			this.board = board;
+		}
+	}
+}
