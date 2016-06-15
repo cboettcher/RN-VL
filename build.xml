@@ -51,6 +51,18 @@
 			<attribute name="Main-Class" value="de.teamkaesekaestchen.rnvl.net.Main" />
 		</manifest>
 	</target>
+	
+	<target name="release-tar-gz" depends="export-ausfuehrbare-jar">
+			<tar destfile="dist/Teamkaesekaestchen.tar.gz">
+				<tarfileset dir="dist">
+					<include name="TeamKaesekaestchen.jar" />
+				</tarfileset>
+				<tarfileset dir=".">
+					<include name="**/*.java"/>
+					<include name="de/teamkaesekaestchen/rnvl/xsd/mazeCom.xsd"/>
+				</tarfileset>
+			</tar>
+		</target>
 
 
 </project>
