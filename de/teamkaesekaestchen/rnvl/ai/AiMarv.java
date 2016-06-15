@@ -34,56 +34,28 @@ public class AiMarv extends AIBase {
 		MoveMessageType mmt = new MoveMessageType();
 		mmt.setNewPinPos(aktpos);
 		
-		//enthaelt alle Zuege
-		List<MoveMessageType> allMoves = new ArrayList<MoveMessageType>();
-		//enthaelt alle Zuege die nicht aussortiert wurden und damit gut sind
-		List<MoveMessageType> betterMoves = new ArrayList<MoveMessageType>();
+		List<CritAi> allCriterias = new ArrayList<CritAi>();
 		
-		//Fuelle mit allen Zuegen die Moeglich sind
-		FillAllPossible(allMoves);
-		
-		//Fuelle betterMoves mit allen Zuegen wo ein Schatz erreicht werden kann
-		for(MoveMessageType e : allMoves) {
-			if(CanFindTreasure(e)) {
-				betterMoves.add(e);
+		int highestScore = -1;
+		MoveMessageType currBestMove = null;
+		List<MoveMessageType> allMoves = super.getAllMoves(mmt);
+		for(MoveMessageType move : allMoves) {
+			int currscore = 0;
+			for(CritAi crit : allCriterias) {
+				currscore+= crit.getPoints(move, tt, bt, treasurepos, aktpos, foundTT, togoTT);
+			}
+			if(currscore > highestScore) {
+				highestScore = currscore;
+				currBestMove = move;
 			}
 		}
+		if(currBestMove == null) {
+			System.out.println("AiMarv failed drastically");
+			System.exit(1);
+		}
 		
-		//Fuelle betterMoves ansonsten mit allen Zuegen die Moeglich sind
-		if(betterMoves.size() == 0) {
-			betterMoves = allMoves;//TODO: dann zuege machen die die gegner moeglist blockieren
-		}
-				
-		// TODO Auto-generated method stub
-		for(int i = 0; i < betterMoves.size(); i++) {
-			if(!isValid(betterMoves.get(i))) {//This Should never happen
-				System.out.println("One of your guilty moves was found unguilty, this should never happen!");
-				betterMoves.remove(i);
-				i--;
-			}
-		}
-		if(betterMoves.size() == 0) {//sollte nicht passieren, es gibt keinen Zug fuer mich :C
-			System.out.println("Marv Failed :C");
-			if(allMoves.size() != 0)
-				return allMoves.get(0);
-			//This shouldn't happen AT ALL
-			System.out.println("Marv Failed very hard to find anything :CC");
-			return null;
-		}
-		return betterMoves.get(0);//Nimm den ersten von allen die uebrig geblieben sind
-	}
-	
-	private boolean CanFindTreasure(MoveMessageType e) {
-		// TODO Auto-generated method stub
-		return false;
-	}
-
-	private void FillAllPossible(List<MoveMessageType> moves) {
-		moves.add(null);//TODO: finish this
-	}
-
-	//TODO: finish this
-	public boolean isValid(MoveMessageType t) {
-		return false;
+		
+		super.doOutput(mmt);
+		return currBestMove;//Nimm den ersten von allen die uebrig geblieben sind
 	}
 }

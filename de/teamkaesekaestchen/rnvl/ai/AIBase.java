@@ -4,10 +4,13 @@ import java.util.ArrayList;
 import java.util.List;
 
 import de.teamkaesekaestchen.rnvl.impl.Board;
+import de.teamkaesekaestchen.rnvl.impl.Card;
+import de.teamkaesekaestchen.rnvl.impl.MoveMessage;
 import de.teamkaesekaestchen.rnvl.impl.Position;
 import de.teamkaesekaestchen.rnvl.net.Main;
 import de.teamkaesekaestchen.rnvl.prot.BoardType;
 import de.teamkaesekaestchen.rnvl.prot.CardType;
+import de.teamkaesekaestchen.rnvl.prot.MoveMessageType;
 import de.teamkaesekaestchen.rnvl.prot.PositionType;
 import de.teamkaesekaestchen.rnvl.prot.TreasureType;
 import de.teamkaesekaestchen.rnvl.prot.TreasuresToGoType;
@@ -21,6 +24,12 @@ public abstract class AIBase implements Player {
 	protected Board bt;
 
 	List<PositionType> possibleShiftPositions;
+	
+	public void doOutput(MoveMessageType mmt) {
+		System.out.println("aktpos:            "+aktpos.getRow()+"  "+aktpos.getCol());
+		System.out.println("pinpos:            "+mmt.getNewPinPos().getRow()+" "+mmt.getNewPinPos().getCol());
+		System.out.println("shiftCardPosition: "+mmt.getShiftPosition().getRow()+"  "+mmt.getShiftPosition().getCol());
+	}
 
 	/**
 	 * creates a PositionType-Object from the given row and column
@@ -120,5 +129,35 @@ public abstract class AIBase implements Player {
 
 			}
 		}
+	}
+	
+	protected List<MoveMessageType> getAllMoves(MoveMessageType mmt) {
+		ArrayList<MoveMessageType> moveList = new ArrayList<MoveMessageType>(44);
+		Card shiftCard;
+		for(int i : new int[]{0, 6}){
+			for(int j : new int[]{1, 3, 5}){
+				if(bt.getForbidden()!= null &&bt.getForbidden().getCol() == j && bt.getForbidden().getRow() == i){
+					continue;
+				}
+				shiftCard = new Card(bt.getShiftCard());
+				for(Card c : shiftCard.getPossibleRotations()){
+					mmt.setShiftCard(c);
+					mmt.setShiftPosition(new Position(i, j));
+					moveList.add(new MoveMessage(mmt));
+				}
+				
+				if(bt.getForbidden()!= null &&bt.getForbidden().getCol() == i && bt.getForbidden().getRow() == j){
+					continue;
+				}
+				shiftCard = new Card(bt.getShiftCard());
+				for(Card c : shiftCard.getPossibleRotations()){
+					mmt.setShiftCard(c);
+					mmt.setShiftPosition(new Position(i, j));
+					moveList.add(new MoveMessage(mmt));	
+				}
+				
+			}
+		}
+		return moveList;
 	}
 }
