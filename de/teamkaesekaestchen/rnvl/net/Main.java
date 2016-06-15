@@ -211,9 +211,11 @@ public class Main {
 					if (winnerID == id) {
 						logger.info("You have won this game!");
 						System.out.println("Spiel gewonnen");
+						System.exit(0);
 					} else {
 						logger.info("You have lost this game.");
 						System.out.println("Spiel verloren");
+						System.exit(0);
 					}
 					break;
 
