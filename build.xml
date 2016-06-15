@@ -1,0 +1,56 @@
+<?xml version="1.0"?>
+
+<project name="Planeten-Golf" default="archive">
+
+	<property name="prj.authors" value="Tim Erdweg, Christian Böttcher, Marvin Winkens, Tobias Fassbender" />
+	
+	<target name="copyXSD" depends="init">
+		<mkdir dir="build/classes/de/teamkaesekaestchen/rnvl/xsd" />
+		<copyfile src="de/teamkaesekaestchen/rnvl/xsd/mazeCom.xsd" dest="build/classes/de/teamkaesekaestchen/rnvl/xsd/mazeCom.xsd"/>
+	</target>
+
+	<target name="init">
+		<mkdir dir="build/classes" />
+		<mkdir dir="dist" />
+		<mkdir dir="${etc}" />
+	</target>
+
+	<target name="compile" depends="init">
+		<javac includeAntRuntime="false" srcdir="." destdir="build/classes" debug="true" debuglevel="lines,vars,source" encoding="UTF-8">
+		</javac>
+	</target>
+
+	<target name="archive" depends="compile,copyXSD">
+		<jar destfile="dist/teamkaesekaestchen_archive.jar" basedir="build/classes" />
+	</target>
+
+	<target name="clean" depends="init">
+		<delete dir="build" />
+		<delete dir="dist" />
+		<delete dir="${etc}" />
+	</target>
+
+	<path id="project.class.path">
+		<pathelement path="./build/classes" />
+		<pathelement path="./dist/teamkaesekaestchen_archive.jar" />
+	</path>
+
+	<property name="etc" value="./etc" />
+	<tstamp>
+		<format property="timestamp.isoformat" pattern="yyyy-MM-dd'T'HH:mm:ss" locale="de" />
+	</tstamp>
+
+	<target name="export-ausfuehrbare-jar" depends="compile,create-manifest,copyXSD">
+		<jar destfile="dist/TeamKaesekaestchen.jar" basedir="build/classes/" excludes="**/test/*" manifest="${etc}/MANIFEST.MF" />
+	</target>
+
+	<target name="create-manifest" depends="init">
+		<manifest file="${etc}/MANIFEST.MF">
+			<attribute name="Built-By" value="${prj.authors}" />
+			<attribute name="Built-On" value="${timestamp.isoformat}" />
+			<attribute name="Main-Class" value="de.teamkaesekaestchen.rnvl.net.Main" />
+		</manifest>
+	</target>
+
+
+</project>

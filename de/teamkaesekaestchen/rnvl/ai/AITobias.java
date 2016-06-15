@@ -17,26 +17,26 @@ import de.teamkaesekaestchen.rnvl.prot.TreasuresToGoType;
  * @author Tobias
  *
  * Spielder id unter Main.id
- * BoardType board enthällt das gesammte bord, den schiebestein und die verbotene position
- * TreasureType treasure enthällt infos über den nächsten zu findenden schatz
- * List<TreasureType> foundTreasures enthällt alle schätze die schon gefunden wurden (vom spieler? oder allen spielern)
- * List<TreasuresToGoType> die anzahl an schätzen die alle spieler noch brauchen um das spiel abzuschließen
+ * BoardType board enthï¿½llt das gesammte bord, den schiebestein und die verbotene position
+ * TreasureType treasure enthï¿½llt infos ï¿½ber den nï¿½chsten zu findenden schatz
+ * List<TreasureType> foundTreasures enthï¿½llt alle schï¿½tze die schon gefunden wurden (vom spieler? oder allen spielern)
+ * List<TreasuresToGoType> die anzahl an schï¿½tzen die alle spieler noch brauchen um das spiel abzuschlieï¿½en
  * 
  * KI Zug Berechnung:
- * 1. Erstelle in einer Liste alle 48 gültigen Züge
- * 2. Filtere alle Züge die nicht gültig sind (gibt es ungültige züge?)
- * 3. Bewerte alle Züge und wähle den Besten zug aus:
+ * 1. Erstelle in einer Liste alle 48 gï¿½ltigen Zï¿½ge
+ * 2. Filtere alle Zï¿½ge die nicht gï¿½ltig sind (gibt es ungï¿½ltige zï¿½ge?)
+ * 3. Bewerte alle Zï¿½ge und wï¿½hle den Besten zug aus:
  * 		Zugbewertung:
  * 			- Schatz erreicht: +1000 //muss immer vorgezogen werden
- * 			- Kürzeste mögliche Distanz zum Schatz nach move: 
+ * 			- Kï¿½rzeste mï¿½gliche Distanz zum Schatz nach move: 
  * 				Distanz zum Schatz in Manhattan Norm: dist
  * 				Punkte: y = 1.02040816327*Math.pow(dist, 2) + -50.0*dist + 500.0 
- * 			- Erreichbare Felder für den eigenen Spieler: +5
- * 			- Erreichbare Schätze für den eigenen Spieler: schon gefunden +0, noch nicht gefunden +10
- * 			- Erreichbare Felder für den nächsten Spieler: -4
- * 			- Erreichbare Schätze für den nächsten Spieler: -8
- * 			- Erreichbare Felder für die weiteren Spieler: -2
- * 			- Erreichbare Schätze für die weiteren Spieler: -4
+ * 			- Erreichbare Felder fï¿½r den eigenen Spieler: +5
+ * 			- Erreichbare Schï¿½tze fï¿½r den eigenen Spieler: schon gefunden +0, noch nicht gefunden +10
+ * 			- Erreichbare Felder fï¿½r den nï¿½chsten Spieler: -4
+ * 			- Erreichbare Schï¿½tze fï¿½r den nï¿½chsten Spieler: -8
+ * 			- Erreichbare Felder fï¿½r die weiteren Spieler: -2
+ * 			- Erreichbare Schï¿½tze fï¿½r die weiteren Spieler: -4
  */
 public class AITobias implements Player {
 	
@@ -161,15 +161,15 @@ public class AITobias implements Player {
 	/**
 	 * Zugbewertung:
 	 * 	- Schatz erreicht: +1000 //muss immer vorgezogen werden
-	 * 	- Kürzeste mögliche Distanz zum Schatz nach move: 
+	 * 	- Kï¿½rzeste mï¿½gliche Distanz zum Schatz nach move: 
 	 * 			Distanz zum Schatz in Manhattan Norm: dist
 	 * 		Punkte: y = 1.02040816327*Math.pow(dist, 2) + -50.0*dist + 500.0 
-	 * 	- Erreichbare Felder für den eigenen Spieler: +5
-	 * 	- Erreichbare Schätze für den eigenen Spieler: schon gefunden +0, noch nicht gefunden +10
-	 * 	- Erreichbare Felder für den nächsten Spieler: -4
-	 * 	- Erreichbare Schätze für den nächsten Spieler: -8
-	 * 	- Erreichbare Felder für die weiteren Spieler: -2
-	 * 	- Erreichbare Schätze für die weiteren Spieler: -4
+	 * 	- Erreichbare Felder fï¿½r den eigenen Spieler: +5
+	 * 	- Erreichbare Schï¿½tze fï¿½r den eigenen Spieler: schon gefunden +0, noch nicht gefunden +10
+	 * 	- Erreichbare Felder fï¿½r den nï¿½chsten Spieler: -4
+	 * 	- Erreichbare Schï¿½tze fï¿½r den nï¿½chsten Spieler: -8
+	 * 	- Erreichbare Felder fï¿½r die weiteren Spieler: -2
+	 * 	- Erreichbare Schï¿½tze fï¿½r die weiteren Spieler: -4
 	 */
 	private int getBoardRating(BoardType board) {
 		int rating = 0;
@@ -203,9 +203,9 @@ public class AITobias implements Player {
 		}
 		//erreichbare Felder
 		rating += reachable.size()*5;
-		//erreichbare Schätze
+		//erreichbare Schï¿½tze
 		rating += getReachableTreasures(board, graph, myId).size()*10;
-		//erreichbare Felder/Schätze für andere Spieler
+		//erreichbare Felder/Schï¿½tze fï¿½r andere Spieler
 		for (int i = 0; i < 4; i++) {
 			if (i != myId && getPlayerPosition(i) != null) {
 				rating -= getReachableFields(board, graph, i).size()*2;
