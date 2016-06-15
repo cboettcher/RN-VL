@@ -2,21 +2,38 @@ package de.teamkaesekaestchen.rnvl.ai;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.logging.Logger;
 
+import de.teamkaesekaestchen.rnvl.impl.Board;
+import de.teamkaesekaestchen.rnvl.impl.Position;
+import de.teamkaesekaestchen.rnvl.net.Main;
 import de.teamkaesekaestchen.rnvl.prot.BoardType;
 import de.teamkaesekaestchen.rnvl.prot.MoveMessageType;
 import de.teamkaesekaestchen.rnvl.prot.TreasureType;
 import de.teamkaesekaestchen.rnvl.prot.TreasuresToGoType;
 
-public class AiMarv implements Player {
+public class AiMarv extends AIBase {
+	private static final Logger logger  = Logger.getLogger("AITim");
 	
 	public AiMarv() {
 		
 	}
 
 	@Override
-	public MoveMessageType getZug(BoardType bt, TreasureType tt, List<TreasureType> foundTT,
+	public MoveMessageType getZug(BoardType btt, TreasureType tt, List<TreasureType> foundTT,
 			List<TreasuresToGoType> togoTT) {
+		logger.info("Ai Marv ist gestartet");
+		
+		bt = new Board(btt);
+		aktpos = new Position(bt.findPlayer(Main.id));
+		
+		if(Main.getTotalFailedMoves()>0){
+			System.exit(1);
+		}
+		
+		MoveMessageType mmt = new MoveMessageType();
+		mmt.setNewPinPos(aktpos);
+		
 		//enthaelt alle Zuege
 		List<MoveMessageType> allMoves = new ArrayList<MoveMessageType>();
 		//enthaelt alle Zuege die nicht aussortiert wurden und damit gut sind
