@@ -6,10 +6,13 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import de.teamkaesekaestchen.rnvl.impl.Board;
 import de.teamkaesekaestchen.rnvl.net.Main;
 import de.teamkaesekaestchen.rnvl.prot.BoardType;
 import de.teamkaesekaestchen.rnvl.prot.CardType;
+import de.teamkaesekaestchen.rnvl.prot.CardType.Openings;
 import de.teamkaesekaestchen.rnvl.prot.MoveMessageType;
+import de.teamkaesekaestchen.rnvl.prot.PositionType;
 import de.teamkaesekaestchen.rnvl.prot.TreasureType;
 import de.teamkaesekaestchen.rnvl.prot.TreasuresToGoType;
 
@@ -40,6 +43,8 @@ import de.teamkaesekaestchen.rnvl.prot.TreasuresToGoType;
  */
 public class AITobias implements Player {
 	
+	private static final int maxValue = 100000;
+	
 	//{row, col}
 	private static final int[][] shiftPositions = new int[][] {{0, 1}, {0, 3}, {0, 5}, {1, 6}, {3, 6}, {5, 6}, 
 		{6, 1}, {6, 3}, {6, 5}, {1, 0}, {3, 0}, {5, 0}};
@@ -58,7 +63,21 @@ public class AITobias implements Player {
 		this.board = board;
 		List<ShiftRating> shiftRatings = getPossibleShifts();
 		Collections.sort(shiftRatings);
-		return null;
+		MoveMessageType move = new MoveMessageType();
+		PositionType shift = new PositionType();
+		PositionType pin = new PositionType();
+		shift.setRow(shiftRatings.get(0).getShiftPosition()[0]);
+		shift.setCol(shiftRatings.get(0).getShiftPosition()[1]);
+		pin.setRow(shiftRatings.get(0).getMove().getPinPos()[0]);
+		pin.setCol(shiftRatings.get(0).getMove().getPinPos()[1]);
+		move.setShiftCard(shiftRatings.get(0).getMove().getCard());
+		move.setShiftPosition(shift);
+		move.setNewPinPos(pin);
+		Openings open = move.getShiftCard().getOpenings();
+		System.out.println("Move: \nShift: " + shift.getRow() + " " + shift.getCol() + 
+				"\nPin: " + pin.getRow() + " " + pin.getCol() + "\nCard: " + 
+				open.isTop() + " " + open.isRight() + " " + open.isBottom() + " " + open.isLeft());
+		return move;
 	}
 	
 	private int getNumPlayers() {
@@ -110,10 +129,20 @@ public class AITobias implements Player {
 		}
 		for (CardType card : rotatedCards) {
 			for (int[] shift : shiftPositions) {
-				RevertableBoard tmpBoard = shiftCard(card, shift);
-				ShiftRating sr = new ShiftRating(shift, getBoardRating(tmpBoard.getBoard()));
-				shifts.add(sr);
-				tmpBoard.revert();
+				if (board.getForbidden() == null || board.getForbidden().getRow() != shift[0] && board.getForbidden().getCol() != shift[1]) {
+					RevertableBoard tmpBoard = shiftCard(card, shift);
+					try {
+						Move rating = getBoardRating(tmpBoard.getBoard());
+						rating.setCard(card);
+						ShiftRating sr = new ShiftRating(shift, rating.getRating(), rating);
+						shifts.add(sr);
+						tmpBoard.revert();
+					}
+					catch (NullPointerException npe) {
+						npe.printStackTrace();
+						tmpBoard.revert();
+					}
+				}
 			}
 		}
 		return shifts;
@@ -171,7 +200,7 @@ public class AITobias implements Player {
 	 * 	- Erreichbare Felder für die weiteren Spieler: -2
 	 * 	- Erreichbare Schätze für die weiteren Spieler: -4
 	 */
-	private int getBoardRating(BoardType board) {
+	private Move getBoardRating(BoardType board) {
 		int rating = 0;
 		int[][] graph = buildGraph(board);
 		//run floyd warshall on the graph
@@ -184,35 +213,44 @@ public class AITobias implements Player {
 		}
 		int[] startPosition = getMyPosition();
 		int startingIndex = startPosition[0]*7+startPosition[1];
+		int[] movePosition = new int[2];
 		List<int[]> reachable = getReachableFields(board, graph, myId);
 		//Schatz erreichbar:
 		int[] treasurePosition = getTreasurePosition(searchingTreasure);
-		if (graph[startingIndex][treasurePosition[0]*7+treasurePosition[1]] != Integer.MAX_VALUE) {
+		System.out.println("graph" + graph);
+		System.out.println("treasure" + treasurePosition);
+		if (graph[startingIndex][treasurePosition[0]*7+treasurePosition[1]] != maxValue) {
 			rating += 1000;
+			movePosition[0] = treasurePosition[0];
+			movePosition[1] = treasurePosition[1];
 		}
 		else {
 			//geringste distanz zum schatz finden
-			int shortestDistance = Integer.MAX_VALUE;
+			int[] shortestDistance = new int[] {-1, -1, maxValue};
 			for (int[] field : reachable) {
 				int dist = Math.abs(treasurePosition[0]-field[0]) + Math.abs(treasurePosition[1]-field[1]);
-				if (dist < shortestDistance) {
-					shortestDistance = dist;
+				if (dist < shortestDistance[2]) {
+					shortestDistance[0] = field[0];
+					shortestDistance[1] = field[1];
+					shortestDistance[2] = dist;
 				}
 			}
-			rating += 1.02040816327*Math.pow(shortestDistance, 2) + -50.0*shortestDistance + 500.0;
+			movePosition[0] = shortestDistance[0];
+			movePosition[1] = shortestDistance[1];
+			rating += 1.02040816327*Math.pow(shortestDistance[2], 2) + -50.0*shortestDistance[2] + 500.0;
 		}
 		//erreichbare Felder
 		rating += reachable.size()*5;
 		//erreichbare Schätze
 		rating += getReachableTreasures(board, graph, myId).size()*10;
 		//erreichbare Felder/Schätze für andere Spieler
-		for (int i = 0; i < 4; i++) {
+		for (int i = 0; i < getNumPlayers(); i++) {
 			if (i != myId && getPlayerPosition(i) != null) {
 				rating -= getReachableFields(board, graph, i).size()*2;
 				rating -= getReachableTreasures(board, graph, i).size()*4;
 			}
 		}
-		return rating;
+		return new Move(new int [] {movePosition[0], movePosition[1]}, rating, null);
 	}
 	
 	private List<int[]> getReachableFields(BoardType board, int[][] graph, int player) {
@@ -220,7 +258,7 @@ public class AITobias implements Player {
 		int startingIndex = startPosition[0]*7+startPosition[1];
 		List<int[]> reachable = new ArrayList<int[]>(49);
 		for (int i = 0; i < graph.length; i++) {
-			if (graph[startingIndex][i] != Integer.MAX_VALUE) {
+			if (graph[startingIndex][i] != maxValue) {
 				reachable.add(new int[] {i/7, i%7});
 			}
 		}
@@ -231,7 +269,7 @@ public class AITobias implements Player {
 		int startingIndex = startPosition[0]*7+startPosition[1];
 		List<TreasureType> reachable = new ArrayList<TreasureType>(49);
 		for (int i = 0; i < graph.length; i++) {
-			if (graph[startingIndex][i] != Integer.MAX_VALUE) {
+			if (graph[startingIndex][i] != maxValue) {
 				TreasureType treasure = board.getRow().get(i/7).getCol().get(i%7).getTreasure();
 				if (treasure != null) {
 					reachable.add(treasure);
@@ -266,7 +304,8 @@ public class AITobias implements Player {
 	private int[] getTreasurePosition(TreasureType treasure) {
 		for (int i = 0; i < board.getRow().size(); i++) {
 			for (int j = 0; j < board.getRow().size(); j++) {
-				if (board.getRow().get(i).getCol().get(j).getTreasure().equals(treasure)) {
+				TreasureType t = board.getRow().get(i).getCol().get(j).getTreasure(); 
+				if (t != null && t.equals(treasure)) {
 					return new int[] {i, j};
 				}
 			}
@@ -281,7 +320,7 @@ public class AITobias implements Player {
 		int[][] graph = new int[49][49];
 		for (int i = 0; i < graph.length; i++) {
 			for (int j = 0; j < graph[i].length; j++) {
-				graph[i][j] = Integer.MAX_VALUE;
+				graph[i][j] = maxValue;
 			}
 		}
 		for (int i = 0; i < graph.length; i++) {
@@ -391,20 +430,22 @@ public class AITobias implements Player {
 	private class ShiftRating implements Comparable<ShiftRating> {
 		
 		private int[] shiftPosition;
+		private Move move;
 		private int rating;
 		
-		public ShiftRating(int[] shiftPosition, int rating) {
+		public ShiftRating(int[] shiftPosition, int rating, Move move) {
 			this.shiftPosition = shiftPosition;
 			this.rating = rating;
+			this.move = move;
 		}
 
 		@Override
 		public int compareTo(ShiftRating o) {
 			if (getRating() > o.getRating()) {
-				return 1;
+				return -1;
 			}
 			else if (getRating() < o.getRating()) {
-				return -1;
+				return 1;
 			}
 			return 0;
 		}
@@ -422,7 +463,45 @@ public class AITobias implements Player {
 		public void setRating(int rating) {
 			this.rating = rating;
 		}
+		
+		public Move getMove() {
+			return move;
+		}
 	}
+	
+	private class Move {
+		
+		private int[] pinPos;
+		private int rating;
+		private CardType card;
+		
+		public Move(int[] pinPos, int rating, CardType card) {
+			this.pinPos = pinPos;
+			this.rating = rating;
+			this.card = card;
+		}
+		
+		public int[] getPinPos() {
+			return pinPos;
+		}
+		public void setPinPos(int[] pinPos) {
+			this.pinPos = pinPos;
+		}
+		
+		public CardType getCard() {
+			return card;
+		}
+		public void setCard(CardType card) {
+			this.card = card;
+		}
+		
+		public int getRating() {
+			return rating;
+		}
+		public void setRating(int rating) {
+			this.rating = rating;
+		}
+	}	
 	
 	private class RevertableBoard {
 		
