@@ -10,15 +10,18 @@ import de.teamkaesekaestchen.rnvl.prot.MoveMessageType;
 import de.teamkaesekaestchen.rnvl.prot.TreasureType;
 import de.teamkaesekaestchen.rnvl.prot.TreasuresToGoType;
 
-public class CritMostPositionsReachable implements ICriteriasBoard{
+public class CritNextPlayerLessPositionsReachable implements ICriteriasBoard {
+
 	@Override
 	public int getPoints(MoveMessageType mmt, TreasureType tt, Board bt,
-			Position treasurepos, Position aktpos, List<TreasureType> foundTT,
+			Position treasurepos, Position enemypos, List<TreasureType> foundTT,
 			List<TreasuresToGoType> togoTT) {
 		
 		Board newBoard = bt.fakeShift(mmt);//Spalten
-		aktpos = new Position(newBoard.findPlayer(Main.id));
-		return newBoard.getAllReachablePositions(aktpos).size()*100;
+		enemypos = new Position(newBoard.findPlayer((Main.id%4)+1));//Next Player is "Thisplayer"mod 4 and then +1
+		return 49-newBoard.getAllReachablePositions(enemypos).size();
 	}
+	
+	
 
 }
