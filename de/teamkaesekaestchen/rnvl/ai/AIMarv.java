@@ -19,14 +19,16 @@ import de.teamkaesekaestchen.rnvl.prot.TreasuresToGoType;
 
 public class AIMarv extends AIBase {
 	private static final Logger logger  = Logger.getLogger("AITim");
-	List<ICriteriasBoard> allCriterias;
+	List<ICriteriasBoard> BoardCriterias;
+	List<ICriteriasMove> MoveCriterias;
 	public AIMarv() {
-		allCriterias = new ArrayList<ICriteriasBoard>();
+		BoardCriterias = new ArrayList<ICriteriasBoard>();
 
+		BoardCriterias.add(new CritCanPickUpTreasure());
+		BoardCriterias.add(new CritMostPositionsReachable());
+		BoardCriterias.add(new CritNextPlayerLessPositionsReachable());
 		
-		allCriterias.add(new CritCanPickUpTreasure());
-		allCriterias.add(new CritMostPositionsReachable());
-		allCriterias.add(new CritNextPlayerLessPositionsReachable());
+		MoveCriterias = new ArrayList<ICriteriasMove>();
 	}
 
 	@Override
@@ -49,7 +51,7 @@ public class AIMarv extends AIBase {
 		List<MoveMessageType> allMoves = super.getAllMoves(mmt);
 		for(MoveMessageType move : allMoves) {
 			int currscore = 0;
-			for(ICriteriasBoard crit : allCriterias) {
+			for(ICriteriasBoard crit : BoardCriterias) {
 				currscore+= crit.getPoints(move, tt, bt, treasurepos, aktpos, foundTT, togoTT);
 			}
 			if(currscore > highestScore) {
@@ -62,13 +64,24 @@ public class AIMarv extends AIBase {
 			System.exit(1);
 		}
 		
+		mmt = currBestMove;
 		Board newBoard = bt.fakeShift(mmt);
 		
 		aktpos = new Position(newBoard.findPlayer(Main.id));
+		treasurepos = new Position(newBoard.findTreasure(tt));
+		System.out.println(highestScore);
 		
-		if(mmt.getNewPinPos().getCol() == aktpos.getCol() && mmt.getNewPinPos().getRow() == aktpos.getRow()) {
+		if(highestScore < CritCanPickUpTreasure.FINDTREASUREVAL) {
 			List<PositionType> positionList = newBoard.getAllReachablePositions(aktpos);
-			mmt.setNewPinPos(positionList.get((int)(Math.random()*positionList.size())));
+			PositionType tmppos = aktpos;
+			for(PositionType pt : positionList){
+				int distcurrent = Math.abs(pt.getCol()-treasurepos.getCol())+Math.abs(pt.getRow()-treasurepos.getRow());
+				int best = Math.abs(tmppos.getCol()-treasurepos.getCol())+Math.abs(tmppos.getRow()-treasurepos.getRow());
+				if(distcurrent < best) {
+					tmppos = pt;
+				}
+			}
+			mmt.setNewPinPos(tmppos);
 		}
 		
 		super.doOutput(mmt);

@@ -13,6 +13,8 @@ import de.teamkaesekaestchen.rnvl.prot.TreasuresToGoType;
 
 public class CritCanPickUpTreasure implements ICriteriasBoard {
 
+	public static final int FINDTREASUREVAL = 100000;
+
 	@Override
 	public int getPoints(MoveMessageType mmt, TreasureType tt, Board bt, Position treasurepos, Position aktpos,
 			List<TreasureType> foundTT, List<TreasuresToGoType> togoTT) {
@@ -24,7 +26,7 @@ public class CritCanPickUpTreasure implements ICriteriasBoard {
 			for(PositionType pp : newBoard.getAllReachablePositions(aktpos)){
 				if(pp.getCol() == treasurepos.getCol() && pp.getRow() == treasurepos.getRow()){
 					mmt.setNewPinPos(new Position(treasurepos));
-					return 100000;
+					return FINDTREASUREVAL;
 				}
 			}
 		
