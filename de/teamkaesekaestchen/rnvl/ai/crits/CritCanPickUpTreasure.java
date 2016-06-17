@@ -24,7 +24,7 @@ public class CritCanPickUpTreasure implements ICriteriasBoard {
 			for(PositionType pp : newBoard.getAllReachablePositions(aktpos)){
 				if(pp.getCol() == treasurepos.getCol() && pp.getRow() == treasurepos.getRow()){
 					mmt.setNewPinPos(new Position(treasurepos));
-					return 1000;
+					return 10000;
 				}
 			}
 		

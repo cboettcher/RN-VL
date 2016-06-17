@@ -4,6 +4,9 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.logging.Logger;
 
+import de.teamkaesekaestchen.rnvl.ai.crits.CritCanPickUpTreasure;
+import de.teamkaesekaestchen.rnvl.ai.crits.CritMostPositionsReachable;
+
 import de.teamkaesekaestchen.rnvl.impl.Board;
 import de.teamkaesekaestchen.rnvl.impl.Position;
 import de.teamkaesekaestchen.rnvl.net.Main;
@@ -35,6 +38,8 @@ public class AIMarv extends AIBase {
 		mmt.setNewPinPos(aktpos);
 		
 		List<ICriteriasBoard> allCriterias = new ArrayList<ICriteriasBoard>();
+		allCriterias.add(new CritCanPickUpTreasure());
+		allCriterias.add(new CritMostPositionsReachable());
 		
 		int highestScore = -1;
 		MoveMessageType currBestMove = null;
