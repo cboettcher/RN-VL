@@ -8,7 +8,7 @@ import de.teamkaesekaestchen.rnvl.impl.*;
 import de.teamkaesekaestchen.rnvl.net.Main;
 import de.teamkaesekaestchen.rnvl.prot.*;
 
-public class AITim implements Player {
+public class AITim implements IPlayer {
 	
 	private static final Logger logger  = Logger.getLogger("AITim");
 	

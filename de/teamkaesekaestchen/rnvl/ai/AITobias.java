@@ -38,7 +38,7 @@ import de.teamkaesekaestchen.rnvl.prot.TreasuresToGoType;
  * 			- Erreichbare Felder f�r die weiteren Spieler: -2
  * 			- Erreichbare Sch�tze f�r die weiteren Spieler: -4
  */
-public class AITobias implements Player {
+public class AITobias implements IPlayer {
 	
 	//{row, col}
 	private static final int[][] shiftPositions = new int[][] {{0, 1}, {0, 3}, {0, 5}, {1, 6}, {3, 6}, {5, 6}, 

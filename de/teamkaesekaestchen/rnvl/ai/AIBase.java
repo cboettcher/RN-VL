@@ -16,7 +16,7 @@ import de.teamkaesekaestchen.rnvl.prot.TreasureType;
 import de.teamkaesekaestchen.rnvl.prot.TreasuresToGoType;
 import de.teamkaesekaestchen.rnvl.prot.CardType.Openings;
 
-public abstract class AIBase implements Player {
+public abstract class AIBase implements IPlayer {
 
 	protected Position aktpos;
 	protected Position treasurepos;
