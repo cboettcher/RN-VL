@@ -160,4 +160,10 @@ public abstract class AIBase implements IPlayer {
 		}
 		return moveList;
 	}
+	/**
+	 * Manhatten distance of 2 PositionTypes
+	 */
+	public static int distance(PositionType a, PositionType b) {
+		return Math.abs(a.getCol()-b.getCol())+Math.abs(a.getRow()-b.getRow());
+	}
 }
