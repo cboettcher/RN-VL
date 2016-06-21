@@ -18,7 +18,7 @@ public class CritMostPositionsReachable implements ICriteriasBoard{
 		
 		Board newBoard = bt.fakeShift(mmt);//Spalten
 		aktpos = new Position(newBoard.findPlayer(Main.id));
-		return newBoard.getAllReachablePositions(aktpos).size()*100;
+		return newBoard.getAllReachablePositions(aktpos).size();
 	}
 
 }

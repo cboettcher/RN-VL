@@ -131,7 +131,7 @@ public abstract class AIBase implements IPlayer {
 		}
 	}
 	
-	protected List<MoveMessageType> getAllMoves(MoveMessageType mmt) {
+	public static List<MoveMessageType> getAllMoves(MoveMessageType mmt, Board bt) {
 		ArrayList<MoveMessageType> moveList = new ArrayList<MoveMessageType>(44);
 		Card shiftCard;
 		for(int i : new int[]{0, 6}){

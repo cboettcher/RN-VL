@@ -14,27 +14,24 @@ import de.teamkaesekaestchen.rnvl.prot.TreasuresToGoType;
 
 public class CritPushSelfCloser implements ICriteriasBoard {
 	
-	public final static int COULDFINDTREASURENEXT = 10000;
+	public final static int COULDFINDTREASURENEXT = 1000;
 	@Override
 	public int getPoints(MoveMessageType mmt, TreasureType tt, Board bt,
 			Position treasurepos, Position aktpos, List<TreasureType> foundTT,
 			List<TreasuresToGoType> togoTT) {
 		// TODO Auto-generated method stub
-		List<PositionType> positions = bt.getAllReachablePositions(aktpos);
-		for(PositionType e : positions) {
-			mmt.setNewPinPos(e);
 			Board newBoard = bt.fakeShift(mmt);
 			PositionType newPos = newBoard.findPlayer(Main.id);
 			PositionType treasuretemp = newBoard.findTreasure(tt);
+			if(treasuretemp == null)
+				return 0;
 			List<PositionType> newpos = newBoard.getAllReachablePositions(newPos);
 			for(PositionType pp : newpos){
-				if(pp.getCol() == treasuretemp.getCol() && pp.getRow() == treasuretemp.getRow()){
-					mmt.setNewPinPos(e);
-					return COULDFINDTREASURENEXT;
+				if(AIBase.distance(pp, treasuretemp) < AIBase.distance(treasuretemp, newPos)){
+					return COULDFINDTREASURENEXT*(Math.abs(AIBase.distance(pp, treasuretemp) - AIBase.distance(treasuretemp, newPos)));
 				}
 			}
-		}
-		return 0;
+			return 0;
 		
 		
 	}

@@ -13,7 +13,7 @@ import de.teamkaesekaestchen.rnvl.prot.TreasuresToGoType;
 
 public class CritCanPickUpTreasure implements ICriteriasBoard {
 
-	public static final int FINDTREASUREVAL = 100000;
+	public static final int FINDTREASUREVAL = 10000000;
 
 	@Override
 	public int getPoints(MoveMessageType mmt, TreasureType tt, Board bt, Position treasurepos, Position aktpos,
