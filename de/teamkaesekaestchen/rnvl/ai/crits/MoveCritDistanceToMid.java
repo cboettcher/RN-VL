@@ -18,7 +18,7 @@ public class MoveCritDistanceToMid implements ICriteriasMove {
 		int distcurrent = Math.abs(pos.getCol()-3)+Math.abs(pos.getRow()-3);
 		if(treasurepos == null)
 			return (14-distcurrent)*10;
-		return (14-distcurrent)*5;
+		return (14-distcurrent);
 	}
 
 }
