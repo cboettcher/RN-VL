@@ -11,7 +11,9 @@ import java.util.logging.Logger;
 
 import javax.xml.bind.UnmarshalException;
 
+import de.teamkaesekaestchen.rnvl.ai.AIMarv;
 import de.teamkaesekaestchen.rnvl.ai.AITim;
+import de.teamkaesekaestchen.rnvl.ai.AITobias;
 import de.teamkaesekaestchen.rnvl.ai.IPlayer;
 import de.teamkaesekaestchen.rnvl.io.XmlInStream;
 import de.teamkaesekaestchen.rnvl.io.XmlOutStream;
@@ -45,7 +47,7 @@ public class Main {
 	public static int id = -1;
 
 	public static final int MAX_LOGIN_TRIES = 5;
-	public static final String TEAM = "Team Kaesekaestchen";
+	public static final String TEAM = "AITobias";//"AIMarv";//"Team Kaesekaestchen";
 	private static final Logger logger = Logger.getLogger("Main");
 	
 	
@@ -99,7 +101,9 @@ public class Main {
 		logger.setLevel(Level.INFO);
 
 		// TODO select AI type depending on commandline arguments
-		player =  new AITim();
+		//player =  new AIMarv();
+		//player = new AITim();
+		player = new AITobias();
 
 		try {
 			socket = new Socket(host, port);

@@ -131,7 +131,7 @@ public abstract class AIBase implements IPlayer {
 		}
 	}
 	
-	protected List<MoveMessageType> getAllMoves(MoveMessageType mmt) {
+	public static List<MoveMessageType> getAllMoves(MoveMessageType mmt, Board bt) {
 		ArrayList<MoveMessageType> moveList = new ArrayList<MoveMessageType>(44);
 		Card shiftCard;
 		for(int i : new int[]{0, 6}){
@@ -159,5 +159,11 @@ public abstract class AIBase implements IPlayer {
 			}
 		}
 		return moveList;
+	}
+	/**
+	 * Manhatten distance of 2 PositionTypes
+	 */
+	public static int distance(PositionType a, PositionType b) {
+		return Math.abs(a.getCol()-b.getCol())+Math.abs(a.getRow()-b.getRow());
 	}
 }
