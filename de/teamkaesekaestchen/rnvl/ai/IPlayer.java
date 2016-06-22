@@ -7,7 +7,7 @@ import de.teamkaesekaestchen.rnvl.prot.MoveMessageType;
 import de.teamkaesekaestchen.rnvl.prot.TreasureType;
 import de.teamkaesekaestchen.rnvl.prot.TreasuresToGoType;
 
-public interface Player {
+public interface IPlayer {
 	public MoveMessageType getZug(BoardType bt, TreasureType tt, List<TreasureType> foundTT,
 			List<TreasuresToGoType> togoTT);
 }

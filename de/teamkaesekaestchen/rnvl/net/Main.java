@@ -12,7 +12,7 @@ import java.util.logging.Logger;
 import javax.xml.bind.UnmarshalException;
 
 import de.teamkaesekaestchen.rnvl.ai.AITim;
-import de.teamkaesekaestchen.rnvl.ai.Player;
+import de.teamkaesekaestchen.rnvl.ai.IPlayer;
 import de.teamkaesekaestchen.rnvl.io.XmlInStream;
 import de.teamkaesekaestchen.rnvl.io.XmlOutStream;
 import de.teamkaesekaestchen.rnvl.prot.AcceptMessageType;
@@ -38,7 +38,7 @@ public class Main {
 	
 
 	// static communication variables
-	private static Player player;
+	private static IPlayer player;
 	private static Socket socket;
 	private static XmlInStream instream;
 	private static XmlOutStream outstream;
@@ -211,9 +211,11 @@ public class Main {
 					if (winnerID == id) {
 						logger.info("You have won this game!");
 						System.out.println("Spiel gewonnen");
+						System.exit(0);
 					} else {
 						logger.info("You have lost this game.");
 						System.out.println("Spiel verloren");
+						System.exit(0);
 					}
 					break;
 

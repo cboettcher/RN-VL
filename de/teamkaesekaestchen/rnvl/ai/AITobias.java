@@ -41,7 +41,7 @@ import de.teamkaesekaestchen.rnvl.prot.TreasuresToGoType;
  * 			- Erreichbare Felder für die weiteren Spieler: -2
  * 			- Erreichbare Schätze für die weiteren Spieler: -4
  */
-public class AITobias implements Player {
+public class AITobias implements IPlayer {
 	
 	private static final int maxValue = 100000;
 	
@@ -53,6 +53,8 @@ public class AITobias implements Player {
 	
 	private TreasureType searchingTreasure;
 	
+	private List<TreasureType> found;
+	
 	private int myId;
 	
 	@Override
@@ -60,6 +62,7 @@ public class AITobias implements Player {
 			List<TreasuresToGoType> treasuresToGo) {
 		myId = Main.id;
 		searchingTreasure = treasure;
+		found = foundTreasures;
 		this.board = board;
 		List<ShiftRating> shiftRatings = getPossibleShifts();
 		Collections.sort(shiftRatings);
@@ -199,6 +202,7 @@ public class AITobias implements Player {
 	 * 	- Erreichbare Schätze für den nächsten Spieler: -8
 	 * 	- Erreichbare Felder für die weiteren Spieler: -2
 	 * 	- Erreichbare Schätze für die weiteren Spieler: -4
+	 * 	- Vom Schatz aus erreichbare Felder: +10
 	 */
 	private Move getBoardRating(BoardType board) {
 		int rating = 0;
@@ -217,8 +221,6 @@ public class AITobias implements Player {
 		List<int[]> reachable = getReachableFields(board, graph, myId);
 		//Schatz erreichbar:
 		int[] treasurePosition = getTreasurePosition(searchingTreasure);
-		System.out.println("graph" + graph);
-		System.out.println("treasure" + treasurePosition);
 		if (graph[startingIndex][treasurePosition[0]*7+treasurePosition[1]] != maxValue) {
 			rating += 1000;
 			movePosition[0] = treasurePosition[0];
@@ -250,11 +252,16 @@ public class AITobias implements Player {
 				rating -= getReachableTreasures(board, graph, i).size()*4;
 			}
 		}
+		//erreichbare Felder vom Schatz aus:
+		rating += getReachableFields(board, graph, treasurePosition).size() * 10;
 		return new Move(new int [] {movePosition[0], movePosition[1]}, rating, null);
 	}
 	
 	private List<int[]> getReachableFields(BoardType board, int[][] graph, int player) {
 		int[] startPosition = getPlayerPosition(player);
+		return getReachableFields(board, graph, startPosition);
+	}
+	private List<int[]> getReachableFields(BoardType board, int[][] graph, int[] startPosition) {
 		int startingIndex = startPosition[0]*7+startPosition[1];
 		List<int[]> reachable = new ArrayList<int[]>(49);
 		for (int i = 0; i < graph.length; i++) {
@@ -271,7 +278,7 @@ public class AITobias implements Player {
 		for (int i = 0; i < graph.length; i++) {
 			if (graph[startingIndex][i] != maxValue) {
 				TreasureType treasure = board.getRow().get(i/7).getCol().get(i%7).getTreasure();
-				if (treasure != null) {
+				if (treasure != null && !found.contains(treasure)) {
 					reachable.add(treasure);
 				}
 			}
@@ -311,6 +318,12 @@ public class AITobias implements Player {
 			}
 		}
 		return null;
+	}
+	
+	public int findStartingDistance(TreasureType treasure) {
+		int[] treasurePos = getTreasurePosition(treasure);
+		int[] pinPos = getMyPosition();
+		return Math.abs(treasurePos[0]-pinPos[0]) + Math.abs(treasurePos[1]-pinPos[0]);
 	}
 	
 	/**
