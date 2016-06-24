@@ -6,6 +6,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import de.teamkaesekaestchen.rnvl.ai.crits.MoveCritOpeningTowardsTreasure;
 import de.teamkaesekaestchen.rnvl.impl.Board;
 import de.teamkaesekaestchen.rnvl.net.Main;
 import de.teamkaesekaestchen.rnvl.prot.BoardType;
@@ -17,6 +18,8 @@ import de.teamkaesekaestchen.rnvl.prot.TreasureType;
 import de.teamkaesekaestchen.rnvl.prot.TreasuresToGoType;
 
 /**
+ * TODO MoveCritSavePosition
+ * 
  * @author Tobias
  *
  * Spielder id unter Main.id
@@ -195,14 +198,12 @@ public class AITobias implements IPlayer {
 	 * 	- Schatz erreicht: +1000 //muss immer vorgezogen werden
 	 * 	- Kuerzeste moegliche Distanz zum Schatz nach move: 
 	 * 			Distanz zum Schatz in Manhattan Norm: dist
-	 * 		Punkte: y = 1.02040816327*Math.pow(dist, 2) + -50.0*dist + 500.0 
-	 * 	- Erreichbare Felder fuer den eigenen Spieler: +5
-	 * 	- Erreichbare Schaetze fuer den eigenen Spieler: schon gefunden +0, noch nicht gefunden +10
-	 * 	- Erreichbare Felder fuer den naechsten Spieler: -4
-	 * 	- Erreichbare Schaetze fuer den naechsten Spieler: -8
-	 * 	- Erreichbare Felder fuer die weiteren Spieler: -2
-	 * 	- Erreichbare Schaetze fuer die weiteren Spieler: -4
-	 * 	- Vom Schatz aus erreichbare Felder: +10
+	 * 		Punkte: y = -3.84615384615*dist + 53.8461538462 (zwischen 0 und 50 punkte)
+	 * 	- Erreichbare Felder fuer den eigenen Spieler: +7
+	 * 	- Erreichbare Schaetze fuer den eigenen Spieler: schon gefunden +0, noch nicht gefunden +3
+	 * 	- Erreichbare Felder fuer die weiteren Spieler: -5
+	 * 	- Erreichbare Schaetze fuer die weiteren Spieler: -2
+	 * 	- Vom Schatz aus erreichbare Felder: +5
 	 */
 	private Move getBoardRating(BoardType board) {
 		int rating = 0;
@@ -218,6 +219,7 @@ public class AITobias implements IPlayer {
 		int[] startPosition = getMyPosition();
 		int startingIndex = startPosition[0]*7+startPosition[1];
 		int[] movePosition = new int[2];
+		boolean treasureFound = false;
 		List<int[]> reachable = getReachableFields(board, graph, myId);
 		//Schatz erreichbar:
 		int[] treasurePosition = getTreasurePosition(searchingTreasure);
@@ -225,6 +227,7 @@ public class AITobias implements IPlayer {
 			rating += 1000;
 			movePosition[0] = treasurePosition[0];
 			movePosition[1] = treasurePosition[1];
+			treasureFound = true;
 		}
 		else {
 			//geringste distanz zum schatz finden
@@ -237,24 +240,69 @@ public class AITobias implements IPlayer {
 					shortestDistance[2] = dist;
 				}
 			}
-			movePosition[0] = shortestDistance[0];
-			movePosition[1] = shortestDistance[1];
-			rating += 1.02040816327*Math.pow(shortestDistance[2], 2) + -50.0*shortestDistance[2] + 500.0;
+			rating += -3.84615384615*shortestDistance[2] + 53.8461538462;
 		}
 		//erreichbare Felder
-		rating += reachable.size()*5;
+		rating += reachable.size()*7;
 		//erreichbare Schaetze
-		rating += getReachableTreasures(board, graph, myId).size()*10;
+		rating += getReachableTreasures(board, graph, myId).size()*3;
 		//erreichbare Felder/Schaetze fuer andere Spieler
 		for (int i = 0; i < getNumPlayers(); i++) {
 			if (i != myId && getPlayerPosition(i) != null) {
-				rating -= getReachableFields(board, graph, i).size()*2;
-				rating -= getReachableTreasures(board, graph, i).size()*4;
+				rating -= getReachableFields(board, graph, i).size()*5;
+				rating -= getReachableTreasures(board, graph, i).size()*2;
 			}
 		}
 		//erreichbare Felder vom Schatz aus:
-		rating += getReachableFields(board, graph, treasurePosition).size() * 10;
-		return new Move(new int [] {movePosition[0], movePosition[1]}, rating, null);
+		rating += getReachableFields(board, graph, treasurePosition).size()*5;
+		if (!treasureFound) {
+			movePosition = findBestPosition(board, reachable, treasurePosition);
+		}
+		return new Move(new int[] {movePosition[0], movePosition[1]}, rating, null);
+	}
+	
+	private int[] findBestPosition(BoardType board, List<int[]> reachable, int[] treasurePosition) {
+		int[] points = new int[reachable.size()];
+		for (int i = 0; i < reachable.size(); i++) {
+			int[] pos = reachable.get(i);
+			int score = 0;
+			int dist = Math.abs(treasurePosition[0]-pos[0]) + Math.abs(treasurePosition[1]-pos[1]);
+			Openings open = board.getRow().get(pos[0]).getCol().get(pos[1]).getOpenings();
+			if(open.isLeft() && pos[1] > treasurePosition[1]) {
+				score += 15;
+			}
+			if(open.isRight() && pos[1] < treasurePosition[1]) {
+				score += 15;
+			}
+			if(open.isTop() && pos[0] > treasurePosition[0]) {
+				score += 15;
+			}
+			if(open.isBottom() && pos[0] < treasurePosition[0]) {
+				score += 15;
+			}
+			if (open.isLeft()) {
+				score += 20;
+			}
+			if (open.isBottom()) {
+				score += 20;
+			}
+			if (open.isRight()) {
+				score += 20;
+			}
+			if (open.isTop()) {
+				score += 20;
+			}
+			score += (14-dist)*10;
+			points[i] = score;
+		}
+		int[] maxScore = new int[] {-1, -1};
+		for (int i = 0; i < points.length; i++) {
+			if (points[i] > maxScore[0]) {
+				maxScore[0] = points[i];
+				maxScore[1] = i;
+			}
+		}
+		return reachable.get(maxScore[1]);
 	}
 	
 	private List<int[]> getReachableFields(BoardType board, int[][] graph, int player) {
